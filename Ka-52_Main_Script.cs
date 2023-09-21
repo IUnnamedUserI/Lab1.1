@@ -7,7 +7,7 @@
 */
 
 IMyTextSurface Surface1;
-IMyCockpit Cockpit;
+IMyCockpit PilotCockpit, CoPilotCockpit;
 IMyRadioAntenna Antenna;
 IMyCameraBlock Camera;
 IMySoundBlock Sound;
@@ -73,7 +73,8 @@ public Program()
 
 void Init()
 {
-    for (int i = 0; Cockpit == null; i++) { if (CockpitList[i].IsFunctional) Cockpit = CockpitList[i]; } // Поиск кокпита
+    for (int i = 0; PilotCockpit == null; i++) { if (CockpitList[i].IsFunctional) PilotCockpit = CockpitList[i]; } // Поиск кокпита первого пилота
+    for (int i = 0; CoPilotCockpit == null; i++) { if (CockpitList[i].IsFunctional && CockpitList[i] != PilotCockpit) CoPilotCockpit = CockpitList[i]; }
 
     IMyTextPanel FlagLCD1 = (IMyTextPanel)GridTerminalSystem.GetBlockWithName("Flag LCD (Left)"); // Флаг декор
     DrawFlag(FlagLCD1);
@@ -93,10 +94,10 @@ void Main(string argument)
     {
         if (Instructor)
         {
-            float KeyWS = Cockpit.MoveIndicator.Z;
-            float KeySpaceC = Cockpit.MoveIndicator.Y;
+            float KeyWS = PilotCockpit.MoveIndicator.Z;
+            float KeySpaceC = PilotCockpit.MoveIndicator.Y;
 
-            if (GetAltitude() < 3) { foreach (IMyThrust Object_Propeller in PropellerList) Object_Propeller.ThrustOverride = (float)(Cockpit.CalculateShipMass().TotalMass * Cockpit.GetNaturalGravity().Length() / PropellerList.Count); }
+            if (GetAltitude() < 3) { foreach (IMyThrust Object_Propeller in PropellerList) Object_Propeller.ThrustOverride = (float)(PilotCockpit.CalculateShipMass().TotalMass * PilotCockpit.GetNaturalGravity().Length() / PropellerList.Count); }
             else { foreach (IMyThrust Object_Propeller in PropellerList) Object_Propeller.ThrustOverride = 0f; }
             
             
@@ -112,7 +113,7 @@ void Main(string argument)
             PropellerLow.ThrustOverride = 0f;
         }
 
-        if (!Cockpit.IsUnderControl && PropellerList[0].ThrustOverride != 0) Gyroscope.Enabled = false;
+        if (!PilotCockpit.IsUnderControl && PropellerList[0].ThrustOverride != 0) Gyroscope.Enabled = false;
         else Gyroscope.Enabled = true;
     }
     catch { Echo("Main() - Error"); }
@@ -148,7 +149,7 @@ void DrawInfo()
         Frame.Add(Frequency);
 
         //v-----СПИДОМЕТР-----v
-        string Speed = Math.Round(Cockpit.GetShipSpeed() * 3.6).ToString();
+        string Speed = Math.Round(PilotCockpit.GetShipSpeed() * 3.6).ToString();
         MySprite Velocity = new MySprite(SpriteType.TEXT, "Скорость:", new Vector2(40f, 120f), null, Color.Green, "Debug", TextAlignment.LEFT, 1f);
         Frame.Add(Velocity);
         Velocity = new MySprite(SpriteType.TEXT, Speed + "км/ч", new Vector2(470f, 120f), null, Color.Green, "Debug", TextAlignment.RIGHT, 1f);
@@ -268,12 +269,12 @@ void DrawInfo()
 
 void SetHorizon() // Расчёт и установка грида относительно горизонта
 {
-    Vector3D GravityVector = Cockpit.GetNaturalGravity();
+    Vector3D GravityVector = PilotCockpit.GetNaturalGravity();
     Vector3D GravityNormalize = Vector3D.Normalize(GravityVector);
 
-    double GravityForward = GravityNormalize.Dot(Cockpit.WorldMatrix.Forward);
-    double GravityLeft = GravityNormalize.Dot(Cockpit.WorldMatrix.Left);
-    double GravityUp = GravityNormalize.Dot(Cockpit.WorldMatrix.Up);
+    double GravityForward = GravityNormalize.Dot(PilotCockpit.WorldMatrix.Forward);
+    double GravityLeft = GravityNormalize.Dot(PilotCockpit.WorldMatrix.Left);
+    double GravityUp = GravityNormalize.Dot(PilotCockpit.WorldMatrix.Up);
 
     float RollInput = (float)Math.Atan2(GravityLeft, -GravityUp);
     float PitchInput = -(float)Math.Atan2(GravityForward, -GravityUp);
@@ -284,8 +285,8 @@ void SetHorizon() // Расчёт и установка грида относи�
 
 void Dumpeners() // Расчёт и наклон грида для погашения боковой скорости
 {
-    Vector3D SpeedVector = Cockpit.GetShipVelocities().LinearVelocity;
-    Vector3D GravityNormalize = Vector3D.Normalize(Cockpit.GetNaturalGravity());
+    Vector3D SpeedVector = PilotCockpit.GetShipVelocities().LinearVelocity;
+    Vector3D GravityNormalize = Vector3D.Normalize(PilotCockpit.GetNaturalGravity());
     Vector3D VProf = Vector3D.ProjectOnPlane(ref SpeedVector, ref GravityNormalize);
     IMyTextSurface Surface3 = Me.GetSurface(2);
     Surface3.WriteText("X: " + Math.Round(VProf.X, 5).ToString() + "\n" +
@@ -293,8 +294,8 @@ void Dumpeners() // Расчёт и наклон грида для погаше�
                         "Z: " + Math.Round(VProf.Z, 5).ToString());
 
     float GyroMultiply = 0.1f;
-    Gyroscope.Pitch = -(float)VProf.Dot(Cockpit.WorldMatrix.Forward) * GyroMultiply;
-    Gyroscope.Roll = -(float)VProf.Dot(Cockpit.WorldMatrix.Right) * 0.01f;
+    Gyroscope.Pitch = -(float)VProf.Dot(PilotCockpit.WorldMatrix.Forward) * GyroMultiply;
+    Gyroscope.Roll = -(float)VProf.Dot(PilotCockpit.WorldMatrix.Right) * 0.01f;
 }
 
 void SetAntennaData() { Antenna.CustomData = "Имя: Пилот_Ка-52\nЧастота: 100.0"; } // Установка стандартные данных антенны (Требует переработку)
@@ -312,7 +313,7 @@ string GetAntennaData(string Data) // Получение данных антен
 
 double GetAltitude() // Возврат высоты относительно уровня моря
 {
-    double Vector = (Cockpit.GetPosition() - PlanetVector).Length() - (SeaAltitude - PlanetVector).Length();
+    double Vector = (PilotCockpit.GetPosition() - PlanetVector).Length() - (SeaAltitude - PlanetVector).Length();
     return Math.Round(Vector);
 }
 
