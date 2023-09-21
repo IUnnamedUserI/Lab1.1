@@ -123,6 +123,7 @@ void DrawInfo()
     
     using (MySpriteDrawFrame Frame = Surface1.DrawFrame())
     {
+        #region Основная информация
         //v-----РАМКА-----v
         MySprite Border = new MySprite(SpriteType.TEXTURE, "SquareSimple", CenterScreen, new Vector2(470f, 450f), Color.Green, "", TextAlignment.CENTER, 0f);
         Frame.Add(Border);
@@ -171,7 +172,9 @@ void DrawInfo()
         string InstructorStatus; if (Instructor) { InstructorStatus = "Вкл."; InstructorColor = Color.Green; } else InstructorStatus = "Выкл.";
         InstructorSprite = new MySprite(SpriteType.TEXT, InstructorStatus, new Vector2(470f, 210f), null, InstructorColor, "Debug", TextAlignment.RIGHT, 1f);
         Frame.Add(InstructorSprite);
+        #endregion
 
+        #region Индикация повреждений
         //v-----ИНДИКАЦИЯ ПОВРЕЖДЕНИЙ-----v
         MySprite Helicopter = new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(CenterScreen.X - 30, 350f), new Vector2(45f, 75f), Color.Green, "", TextAlignment.CENTER, 0f);
         Frame.Add(Helicopter);
@@ -258,6 +261,7 @@ void DrawInfo()
             Helicopter = new MySprite(SpriteType.TEXTURE, "Circle", new Vector2(CenterScreen.X + 30, 445f), new Vector2(10f, 25f), GetBlockEnabled("Right Wheel Rotor"), "", TextAlignment.CENTER, (float)(180 * Math.PI / 180));
             Frame.Add(Helicopter);
         }
+        #endregion
     }   
 }
 
