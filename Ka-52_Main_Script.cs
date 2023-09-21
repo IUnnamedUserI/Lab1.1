@@ -3,7 +3,6 @@
 1. Адаптивная индикация повреждений
 2. Адаптивная глобальная система
 3. !!! ДОДЕЛАТЬ РАБОТУ С ГЛОБАЛЬНЫМИ ДАННЫМИ !!!
-4. Управление камерой вторым пилотом
 */
 
 IMyTextSurface Surface1;
@@ -14,6 +13,7 @@ IMySoundBlock Sound;
 IMyPowerProducer LeftEngine, RightEngine;
 IMyThrust PropellerUp, PropellerLow;
 IMyGyro Gyroscope;
+IMyMotorStator RotorAzimuth, RotorElevation;
 
 IMySmallMissileLauncher MissileLauncher1, MissileLauncher2;
 IMySmallMissileLauncher Bomb1, Bomb2;
@@ -34,6 +34,8 @@ bool Instructor;
 bool Horizon;
 bool SpeedDumpeners;
 
+const float CAMERA_SENSIVITY = 0.5f;
+
 public Program()
 {
     Runtime.UpdateFrequency = UpdateFrequency.Update1;
@@ -48,6 +50,8 @@ public Program()
     PropellerUp = (IMyThrust)GridTerminalSystem.GetBlockWithName("Helicopter Propeller Upper");
     PropellerLow = (IMyThrust)GridTerminalSystem.GetBlockWithName("Helicopter Propeller Lower");
     Gyroscope = (IMyGyro)GridTerminalSystem.GetBlockWithName("Flight Stick (Gyro) Override");
+    RotorAzimuth = (IMyMotorStator)GridTerminalSystem.GetBlockWithName("Camera Rotor Azimuth");
+    RotorElevation = (IMyMotorStator)GridTerminalSystem.GetBlockWithName("Camera Rotor Elevation");
 
     MissileLauncher1 = (IMySmallMissileLauncher)GridTerminalSystem.GetBlockWithName("Hydra Rocket Pod 2");
     MissileLauncher2 = (IMySmallMissileLauncher)GridTerminalSystem.GetBlockWithName("Hydra Rocket Pod 3");
@@ -100,7 +104,12 @@ void Main(string argument)
             if (GetAltitude() < 3) { foreach (IMyThrust Object_Propeller in PropellerList) Object_Propeller.ThrustOverride = (float)(PilotCockpit.CalculateShipMass().TotalMass * PilotCockpit.GetNaturalGravity().Length() / PropellerList.Count); }
             else { foreach (IMyThrust Object_Propeller in PropellerList) Object_Propeller.ThrustOverride = 0f; }
             
-            
+            if (CoPilotCockpit != null)
+            {
+                RotorAzimuth.TargetVelocityRPM = CoPilotCockpit.RotationIndicator.X * CAMERA_SENSIVITY;
+                RotorElevation.TargetVelocityRPM = CoPilotCockpit.RotationIndicator.Y * CAMERA_SENSIVITY;
+            }
+
             if (Horizon) SetHorizon();
             if (SpeedDumpeners) Dumpeners();
         }
